@@ -1,0 +1,23 @@
+@import "tailwindcss";
+@layer base {
+  body {
+    color: #fff;
+    @apply h-screen bg-gray-900;
+  }
+}
+@layer utilities {
+  .tabs-container > * {
+    @apply m-2;
+    @apply p-2;
+  }
+}
+
+@font-face {
+  font-family: "Monument Grotesk";
+  src: url("./assets/MonumentGrotesk.woff2") format("woff2");
+  font-weight: normal;
+  font-style: normal;
+}
+* {
+  font-family: "Monument Grotesk";
+}
