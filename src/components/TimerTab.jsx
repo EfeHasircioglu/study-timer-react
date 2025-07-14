@@ -45,16 +45,25 @@ export default function TimerTab({
         <>
           <Button
             onClick={isRunning ? stopTimer : startTimer}
-            className="inline-flex ml-1 items-center mb-1 gap-2 rounded-md border-1 border-gray-600 p-1 mt-1 cursor-pointer"
+            className="inline-flex ml-1 items-center mb-1 gap-2 rounded-md border-1 border-gray-600 p-1  cursor-pointer"
           >
             {!isRunning ? `Start` : `Stop`}
           </Button>
           {/* aşağıdaki, reset butonu */}
           <Button
             onClick={resetTimer}
-            className="inline-flex ml-1 items-center mb-1 gap-2 rounded-md border-1 border-gray-600 p-1 mt-1 cursor-pointer"
+            className="inline-flex items-center mb-1 ml-3 gap-2 rounded-full p-2 border-1 border-gray-600 cursor-pointer data-[hover]:bg-gray-700"
           >
-            {`■`}
+            {
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 16 16"
+                fill="currentColor"
+                className="size-4"
+              >
+                <rect width={10} height={10} x={3} y={3} rx={1.5} />
+              </svg>
+            }
           </Button>
         </>
       }

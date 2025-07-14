@@ -7,12 +7,17 @@ import {
   Disclosure,
   DisclosureButton,
   DisclosurePanel,
+  Input,
 } from "@headlessui/react";
 import { useState, useEffect } from "react";
+import { CheckIcon } from "@heroicons/react/24/solid";
+
 import TimerTab from "./TimerTab";
 
 export default function MainContainer() {
   //üç ayrı (mod) için ayrı stateler, çünkü her birinin süresini biz değiştirebiliyoruz
+  const [enabled, setEnabled] = useState(true);
+
   const [studyTime, setStudyTime] = useState(25);
   const [breakTime, setBreakTime] = useState(5);
   const [longBreakTime, setLongBreakTime] = useState(45);
@@ -38,44 +43,51 @@ export default function MainContainer() {
 
   //reset butonu için fonksiyon
   const resetTimer = () => {
-    if (intervalID) clearInterval(intervalID); //ilk başta timeri durduruyoruz.
     setIntervalID(null);
     setIsRunning(false);
-    setTimeLeft(null); //zamanı da sıfırlıyoruz
     setIsStarted(false);
+    setTimeLeft(null); //zamanı da sıfırlıyoruz
+    setCompletedSessions(0);
+    setActiveTab(0); //bu olmayadabilir
   };
 
   // timer'i başlatmak için.
   const startTimer = () => {
-    setActiveTab(0);
-    setIsRunning(true);
-    setIsStarted(true);
-    const totalSeconds = timeLeft ?? studyTime * 60; //studyTime dakika olarak tutuluyor, biz onu burada saniyeye çeviriyoruz (ve eğer devam eden süre varsa onu tutuyor ki sonraki basışımızda devam etsin)
-    setTimeLeft(totalSeconds); // başlatırken zamanlayıcıdaki kalan zamanı studytime'ın saniye cinsinden olanu olarak belirliyoruz, zaten her türlü study moduna geçip orada başlayacağız
-    //eğer daha önceden bir timer çalışıyorsa onu durduralım
-    if (intervalID) {
-      clearInterval(intervalID);
+    if (!isStarted) {
+      // eğer ilk defa başlatılıyorsa
+      const studySec = studyTime * 60;
+      setTimeLeft(studySec);
+      setIsStarted(true);
     }
-    // zamanın ilerlemesi aşağıdakiler sayesinde
-    const newInterval = setInterval(() => {
-      //prev, saniye cinsinden kalan zaman ve o 1'e düşünce, zamanlayıcının biteceğini biliyoruz.
-      setTimeLeft((prev) => {
-        if (prev === 1) {
-          clearInterval(newInterval);
-          handleNextPhase(); // sonraki sessionların ne olacağını söyler
-          return 0; // 0 saniye, yani bitmiş bir timer döndürüyoruz
-        }
-        return prev - 1; // bir saniye daha geçiyor
-      });
-    }, 1000);
-
-    setIntervalID(newInterval);
+    setIsRunning(true);
   };
+
+  useEffect(() => {
+    if (!isRunning) return; //timer çalışmıyorsa zaten yapacak bir şey yok.
+    if (timeLeft === 0) {
+      setIsRunning(false);
+      handleNextPhase();
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          handleNextPhase();
+          return 0;
+        }
+        return prev - 1; //saniye azaltma mantığı, her saniye olacak
+      });
+    }, 1000 /* her saniye olması için */);
+
+    return () => clearInterval(interval);
+  }, [isRunning, activeTab, timeLeft]);
   //sessionlar arası geçişleri ayarlamak için bir fonksiyon
   const handleNextPhase = () => {
     if (activeTab === 0) {
+      setTimeLeft(studyTime);
       const nextSessionCount = completedSessions + 1;
-      setCompletedSessions(nextSessionCount);
 
       if (nextSessionCount % longBreakInterval === 0) {
         setActiveTab(2); //eğer 3 tane session yaptıysak long break'a geçiyoruz
@@ -85,19 +97,16 @@ export default function MainContainer() {
         setActiveTab(1);
         setTimeLeft(breakTime * 60);
       }
+      setCompletedSessions(nextSessionCount);
     } else {
       setActiveTab(0);
       setTimeLeft(studyTime * 60);
     }
+    setIsRunning(true); //timer otomatik olarak devam etmeli
   };
   //timer durdurmak için
   const stopTimer = () => {
-    if (intervalID) {
-      // eğer başlatılmış bir timer varsa
-      clearInterval(intervalID); // prev değeri aynı kaldığı için timer duruyor, sıfırlanmıyor.
-      setIntervalID(null);
-    }
-    setIsRunning(false);
+    setIsRunning(false); //sadece isRunning'i durduruyoruz, useEffect var zaten
   };
 
   const tabNames = ["Study", "Break", "Long Break"];
@@ -173,14 +182,19 @@ export default function MainContainer() {
           </TabPanel>
         </TabPanels>
       </TabGroup>
-      <Disclosure as="div" className="p-6">
-        <DisclosureButton className="group flex w-full items-center justify-between">
+      <Disclosure as="div" className="pt-6">
+        <DisclosureButton className="border-1 p-2 mt-0 m-2 w-fit  bg-gray-800 border-gray-700 rounded-xl group flex items-center justify-between cursor-pointer">
           <span className="text-sm/6 font-medium text-white group-data-hover:text-white/80">
             Settings
           </span>
         </DisclosureButton>
-        <DisclosurePanel className="mt-2 text-sm/5 text-white/50">
-          If you're unhapp
+        <DisclosurePanel className="mt-2 max-w-2xs text-sm/5 text-white/50">
+          Interval Amount{" "}
+          <Input
+            className="border-1 ml-1 w-10 rounded-md p-1"
+            name="interval_amount"
+            type="number"
+          />
         </DisclosurePanel>
       </Disclosure>
     </div>
