@@ -11,6 +11,8 @@ export default function TimerTab({
   setTimeLeft,
   resetTimer,
   isStarted,
+  completedSessions,
+  totalCycles,
 }) {
   const formatTime = (seconds) => {
     const min = Math.floor(seconds / 60); //dakika değeri
@@ -21,6 +23,12 @@ export default function TimerTab({
   };
   return (
     <div>
+      {/* kaç sessionumuz daha kaldığını bize söyleyen label */}
+      <div className="text-sm m-2 mb-1">
+        {completedSessions >= totalCycles
+          ? "🎉 All sessions completed!"
+          : `Completed ${completedSessions} of ${totalCycles} sessions`}
+      </div>
       <div className="flex gap-2 text-4xl w-fit p-1 m-1 data-hover:border-gray-600">
         <div
           key={activeTab}
@@ -45,14 +53,14 @@ export default function TimerTab({
         <>
           <Button
             onClick={isRunning ? stopTimer : startTimer}
-            className="inline-flex ml-1 items-center mb-1 gap-2 rounded-md border-1 border-gray-600 p-1  cursor-pointer"
+            className="ml-1 mb-1  rounded-full border-1 border-gray-600 p-1 w-16  cursor-pointer data-[hover]:bg-gray-700"
           >
             {!isRunning ? `Start` : `Stop`}
           </Button>
           {/* aşağıdaki, reset butonu */}
           <Button
             onClick={resetTimer}
-            className="inline-flex items-center mb-1 ml-3 gap-2 rounded-full p-2 border-1 border-gray-600 cursor-pointer data-[hover]:bg-gray-700"
+            className="inline-flex justify-center mb-1 ml-3 gap-2 rounded-full w-9 align-middle p-1.5 border-1 border-gray-600 cursor-pointer data-[hover]:bg-gray-700"
           >
             {
               <svg

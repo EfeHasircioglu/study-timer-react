@@ -12,12 +12,6 @@
   }
 }
 
-@font-face {
-  font-family: "Monument Grotesk";
-  src: url("./assets/MonumentGrotesk.woff2") format("woff2");
-  font-weight: normal;
-  font-style: normal;
-}
 * {
-  font-family: "Monument Grotesk";
+  font-family: "Inter", "Monument Grotesk";
 }
