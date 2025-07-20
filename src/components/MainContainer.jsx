@@ -88,6 +88,7 @@ export default function MainContainer() {
   const startTimer = () => {
     if (!isStarted) {
       setActiveTab(0);
+      setCompletedSessions(0);
       // eğer ilk defa başlatılıyorsa
       const studySec = studyTime * 60;
       setTimeLeft(studySec);
@@ -127,7 +128,13 @@ export default function MainContainer() {
       // buradaki amaçlarımızdan birisi, son çalışma sessionu bittiyse direk bitirmek, dinlenmeden sonra da bitecek zaten.
       if (nextSessionCount >= totalCycles) {
         // toplam cycle hedefine ulaşıldıysa her şeyi durdur ve bitir!
-        resetTimer(); // bu, zaten her şeyi yapıyor zaten
+        setIntervalID(null);
+        setIsRunning(false);
+        setIsStarted(false);
+        setTimeLeft(null); //zamanı da sıfırlıyoruz
+        setActiveTab(0);
+        playSelectedSound();
+
         return;
         //TODO: buraya daha sonra başka şeyler de yazılabilir tamamlama ile ilgili, tebrik ve ses, clap clap sesi koyulabilir
       }
