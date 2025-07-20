@@ -17,6 +17,7 @@
     "framer-motion": "^12.23.6",
     "heroicons": "^2.2.0",
     "react": "^19.1.0",
+    "react-confetti": "^6.4.0",
     "react-dom": "^19.1.0",
     "tailwindcss": "^4.1.11"
   },

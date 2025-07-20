@@ -29,8 +29,13 @@ export default function TimerTab({
           ? "🎉 All sessions completed!"
           : `Completed ${completedSessions} of ${totalCycles} sessions`}
       </div>
-      <div className="flex gap-2 text-4xl w-fit p-1 m-1 data-hover:border-gray-600 transition duration-300">
+      <div className="flex gap-2 text-4xl w-fit m-1 data-hover:bg-gray-600 transition duration-300">
         <div
+          className={
+            isStarted
+              ? "p-1"
+              : "hover:bg-gray-900 transition duration-300 rounded-xl p-1"
+          }
           key={activeTab}
           suppressContentEditableWarning={true}
           onBlur={(e) => {

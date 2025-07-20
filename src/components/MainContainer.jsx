@@ -25,7 +25,7 @@ export default function MainContainer() {
   const [enabled, setEnabled] = useState(true);
   const [studyTime, setStudyTime] = useState(25);
   const [breakTime, setBreakTime] = useState(5);
-  const [longBreakTime, setLongBreakTime] = useState(45);
+  const [longBreakTime, setLongBreakTime] = useState(15);
   const [isRunning, setIsRunning] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
   const [timeLeft, setTimeLeft] = useState(null); // zamanlayıcı başlayana kadar hiçbirşey gösterilmediği için null, saniye cinsinden süreyi temsil ediyor
@@ -215,7 +215,7 @@ export default function MainContainer() {
         onChange={setActiveTab}
         className={"w-72"}
       >
-        <TabList className="relative tabs-container transition duration-300">
+        <TabList className="relative tabs-container">
           {tabNames.map((name, index) => (
             <Tab
               key={index}
@@ -332,35 +332,47 @@ export default function MainContainer() {
                 Long Breaks
               </div>
             </div>
-            {longBreakEnabled && (
-              <div className="flex flex-col">
-                <div className="m-1 pt-1 select-none">
-                  Long Break Interval Amount
+            {/* {longBreakEnabled && ( */}
+            <div className="flex flex-col">
+              <Transition
+                show={longBreakEnabled}
+                enter="transition duration-300"
+                enterFrom="opacity-0"
+                enterTo="opacity-100"
+                leave="transition duration-150"
+                leaveFrom="opacity-100"
+                leaveTo="opacity-0"
+              >
+                <div>
+                  <div className="m-1 pt-1 select-none">
+                    Long Break Interval Amount
+                  </div>
+                  <Input
+                    disabled={isStarted}
+                    className="px-3 py-1.5 mt-1 w-full rounded-lg text-sm/6 bg-white/5 text-white border border-gray-900 data-[disabled]:text-white/50"
+                    name="lb_interval_amount"
+                    min={2}
+                    itemID="lb_interval_amount"
+                    max={12}
+                    value={longBreakInput}
+                    onChange={(e) => setLongBreakInput(e.target.value)}
+                    type="number"
+                  />
+                  <label
+                    className="text-xs text-red-500 p-1 pb-0"
+                    htmlFor="interval_amount"
+                  >
+                    {longBreakError}
+                  </label>
                 </div>
-                <Input
-                  disabled={isStarted}
-                  className="px-3 py-1.5 mt-1 w-full rounded-lg text-sm/6 bg-white/5 text-white border border-gray-900 data-[disabled]:text-white/50"
-                  name="lb_interval_amount"
-                  min={2}
-                  itemID="lb_interval_amount"
-                  max={12}
-                  value={longBreakInput}
-                  onChange={(e) => setLongBreakInput(e.target.value)}
-                  type="number"
-                />
-                <label
-                  className="text-xs text-red-500 p-1 pb-0"
-                  htmlFor="interval_amount"
-                >
-                  {longBreakError}
-                </label>
-              </div>
-            )}
+              </Transition>
+            </div>
+            {/*  )} */}
             <div className="flex flex-col">
               <div className="m-1 pt-1 select-none">Total Study Sessions</div>
               <Input
                 disabled={isStarted}
-                className="px-3 py-1.5 mt-1 w-full rounded-lg text-sm/6 bg-white/5 text-white border border-gray-900 data-[disabled]:text-white/50"
+                className="px-3 py-1.5 mt-1 w-full rounded-lg text-sm/6 bg-white/5 text-white border border-gray-900 data-[disabled]:text-white/50 hover:bg-gray-700 transition duration-300"
                 name="interval_amount"
                 min={2} //en az 1 long break olacak kadar olmalı
                 itemID="interval_amount"
@@ -386,8 +398,8 @@ export default function MainContainer() {
                       value={selectedSound}
                       onChange={(e) => setSelectedSound(e.target.value)}
                       className={clsx(
-                        "block w-full appearance-none rounded-lg border-none bg-white/5 px-3 py-1.5 mt-1 text-sm/6 text-white data-[disabled]:text-white/50 cursor-pointer",
-                        "focus:not-data-focus:outline-none data-focus:outline-2 data-focus:-outline-offset-2 data-focus:outline-white/25",
+                        "block w-full appearance-none rounded-lg border-none bg-white/5 px-3 py-1.5 mt-1 text-sm/6 text-white data-[disabled]:text-white/50 cursor-pointer transition duration-300",
+                        "focus:not-data-focus:outline-none data-focus:outline-2 data-focus:-outline-offset-2 data-focus:outline-white/25 ",
                         // Make the text of each option black on Windows
                         "*:text-black"
                       )}
@@ -406,7 +418,7 @@ export default function MainContainer() {
                 <Button
                   disabled={isStarted}
                   onClick={playSelectedSound}
-                  className="cursor-pointer inline w-min appearance-none rounded-lg border-none bg-white/5 px-3 py-1.5 mt-1 text-sm/6 text-white data-[disabled]:text-white/50"
+                  className="cursor-pointer inline w-min appearance-none rounded-lg border-none bg-white/5 px-3 py-1.5 mt-1 text-sm/6 text-white data-[disabled]:text-white/50 data-[hover]:bg-gray-700 transition duration-300"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
