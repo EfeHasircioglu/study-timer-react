@@ -7,14 +7,15 @@ import {
   Disclosure,
   DisclosureButton,
   DisclosurePanel,
-  Description,
+  Checkbox,
   Field,
-  Label,
+  Button,
   Select,
   Input,
+  Transition,
 } from "@headlessui/react";
-import { useState, useEffect } from "react";
-import { ChevronDownIcon } from "@heroicons/react/24/solid";
+import { useState, useEffect, useRef } from "react";
+import { ChevronDownIcon, CheckIcon } from "@heroicons/react/24/solid";
 import clsx from "clsx";
 
 import TimerTab from "./TimerTab";
@@ -35,9 +36,32 @@ export default function MainContainer() {
   const [longBreakInput, setLongBreakInput] = useState("2"); //inputu alıp geçici olarak buraya koyacağız
   const [longBreakError, setLongBreakError] = useState("");
   const [sessionAmountError, setSessionAmountError] = useState("");
-  const [error, setError] = useState("");
   const [totalCycles, setTotalCycles] = useState(4); //kaç session sonra çalışma tamamlanacak?
+  const [longBreakEnabled, setLongBreakEnabled] = useState(false); //default olarak long break seçeneği erişilebilir olmasın.
+  const [selectedSound, setSelectedSound] = useState("simple"); //hangi sesi seçtiğimize göre o sesi çalacağız, bunun için state tutuyoruz
+
   //bu fonksiyon ile hangi tabdaysak onun süresini oraya koymamızı sağlıyor.
+  const tabRefs = useRef([]); //hangi tabda olduğumuzu framer için takip edeceğiz
+  //ses dosyalarını çaldırmak için kullanacağımız şey
+  const soundRef = useRef(null);
+
+  tabRefs.current = []; //önceki referansları render öncesinde temizliyoruz
+  //ses değiştirme dropdownunda her ses değişince corresponding sesi seçiyoruz
+  useEffect(() => {
+    const soundPaths = {
+      simple: "/sounds/simple.mp3",
+      metro: "/sounds/metro.mp3",
+      shika: "/sounds/shika.mp3",
+      karakara: "/sounds/karakara.mp3",
+    };
+
+    const selectedPath = soundPaths[selectedSound] || soundPaths.simple; //eğer seçilen yoksa default olanı kullanıyoruz
+
+    soundRef.current = new Audio(selectedPath);
+  }, [selectedSound]);
+
+  //tabları kaydırmalı animasyon yapma denemesi, umarım başarılı olurum (framer motion hoş bir şeye benziyor)
+
   const getCurrentTime = () => {
     if (activeTab === 0) return studyTime;
     if (activeTab === 1) return breakTime;
@@ -63,6 +87,7 @@ export default function MainContainer() {
   // timer'i başlatmak için.
   const startTimer = () => {
     if (!isStarted) {
+      setActiveTab(0);
       // eğer ilk defa başlatılıyorsa
       const studySec = studyTime * 60;
       setTimeLeft(studySec);
@@ -92,57 +117,113 @@ export default function MainContainer() {
 
     return () => clearInterval(interval);
   }, [isRunning, activeTab, timeLeft]);
+
   //sessionlar arası geçişleri ayarlamak için bir fonksiyon
   const handleNextPhase = () => {
     if (activeTab === 0) {
       setTimeLeft(studyTime);
-
       const nextSessionCount = completedSessions + 1;
+      setCompletedSessions(nextSessionCount); //tamamlanan session sayısını arttırıyoruz eğer bitmemiş ise
+      // buradaki amaçlarımızdan birisi, son çalışma sessionu bittiyse direk bitirmek, dinlenmeden sonra da bitecek zaten.
       if (nextSessionCount >= totalCycles) {
         // toplam cycle hedefine ulaşıldıysa her şeyi durdur ve bitir!
-        setIsRunning(false);
-        setIsStarted(false);
-        setActiveTab(0);
-        setTimeLeft(null);
+        resetTimer(); // bu, zaten her şeyi yapıyor zaten
         return;
         //TODO: buraya daha sonra başka şeyler de yazılabilir tamamlama ile ilgili, tebrik ve ses, clap clap sesi koyulabilir
       }
 
-      setCompletedSessions(nextSessionCount); //tamamlanan session sayısını arttırıyoruz eğer bitmemiş ise
-
-      if (nextSessionCount % longBreakInterval === 0) {
+      if (
+        longBreakEnabled &&
+        longBreakInterval > 0 &&
+        nextSessionCount % longBreakInterval === 0
+      ) {
+        //long break
         setActiveTab(2);
         setTimeLeft(longBreakTime * 60);
       } else {
+        //normal break
         setActiveTab(1);
         setTimeLeft(breakTime * 60);
       }
     } //eğer breakta isek bu sefer
     else {
+      //study time
       setActiveTab(0);
       setTimeLeft(studyTime * 60);
     }
     setIsRunning(true); //geçişlerde otomatik olarak başlasın
+    playSelectedSound(); //TODO: bu belki çalışmayabilir?
   };
   //timer durdurmak için
   const stopTimer = () => {
     setIsRunning(false); //sadece isRunning'i durduruyoruz, useEffect var zaten
   };
 
-  const tabNames = ["Study", "Break", "Long Break"];
+  const playSelectedSound = () => {
+    if (soundRef.current) soundRef.current.currentTime = 0; //sesin baştan çalması için
+    soundRef.current.play().catch((e) => {
+      console.log("Ses çalınamadı", e);
+    });
+  };
+  //longbreak interval ve kaç session olacağını girdiğimiz yerlerdeki inputların kontrolü
+  useEffect(() => {
+    const longParsed = parseInt(longBreakInput, 10);
+    const totalParsed = parseInt(totalCycles, 10);
+
+    // Long Break Interval Validation
+    if ((isNaN(longParsed) && longParsed < 2) || longParsed > 12) {
+      setLongBreakError("Must be between 2 and 12");
+    } else if (totalParsed % longParsed !== 0) {
+      setLongBreakError("Should divide total sessions evenly");
+    } else {
+      setLongBreakError("");
+      if (longParsed !== longBreakInterval) {
+        setLongBreakInterval(longParsed);
+      }
+    }
+    // Total Sessions Validation
+    if ((isNaN(totalParsed) && totalParsed < 2) || totalParsed > 36) {
+      setSessionAmountError("Must be between 2 and 36");
+    } else {
+      setSessionAmountError("");
+      if (totalParsed !== totalCycles) {
+        setTotalCycles(totalParsed);
+      }
+    }
+  }, [longBreakInput, totalCycles]);
+
+  const tabNames = ["Study", "Break"];
+  if (longBreakEnabled) {
+    tabNames.push("Long Break");
+  }
+
+  useEffect(() => {
+    if (!longBreakEnabled) {
+      setLongBreakInterval(0);
+    } else {
+      const parsed = parseInt(longBreakInput, 10);
+      if (!isNaN(parsed)) {
+        setLongBreakInterval(parsed);
+      }
+    }
+  }, [longBreakEnabled]);
+
   return (
     <div>
       <TabGroup
         selectedIndex={activeTab}
         onChange={setActiveTab}
-        className={"w-fit"}
+        className={"w-72"}
       >
-        <TabList className="tabs-container">
+        <TabList className="relative tabs-container transition duration-300">
           {tabNames.map((name, index) => (
             <Tab
               key={index}
-              disabled={isStarted && activeTab !== index}
-              className="rounded-full px-3 py-1 text-md/6 cursor-pointer text-white focus:not-data-focus:outline-none data-focus:outline data-focus:outline-white data-hover:bg-white/5 data-selected:bg-white/10 data-selected:data-hover:bg-white/10"
+              ref={(el) => {
+                if (el) tabRefs.current[index] = el;
+              }}
+              disabled={isStarted && isRunning && activeTab !== index}
+              className="transition duration-300 rounded-full px-3 py-1 text-md/6 cursor-pointer text-white focus:not-data-focus:outline-none data-focus:outline data-focus:outline-white data-hover:bg-white/5 z-10 data-[selected]:bg-gray-700"
             >
               {name}
             </Tab>
@@ -209,14 +290,14 @@ export default function MainContainer() {
         </TabPanels>
       </TabGroup>
       <Disclosure as="div" className="pt-6">
-        <DisclosureButton className="border-1 p-2 mt-0 m-2 bg-gray-900 border-gray-700 rounded-full group flex items-center justify-between cursor-pointer ">
-          <span className="flex pl-1.5 gap-3 items-center text-sm/6 font-medium text-white ">
-            Settings{" "}
+        <DisclosureButton className="border-1 p-2 mt-0 m-2 w-fit bg-gray-900 border-gray-700 rounded-full group flex items-center cursor-pointer data-[hover]:bg-gray-800 transition duration-300">
+          <span className="flex pl-1.5 gap-3 w-full items-center text-sm/6 font-medium text-white">
+            <div className="pl-1">Settings</div>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 16 16"
               fill="currentColor"
-              className="size-4 ml-auto"
+              className="size-4 ml-auto mr-1"
             >
               <path
                 fillRule="evenodd"
@@ -226,94 +307,120 @@ export default function MainContainer() {
             </svg>
           </span>
         </DisclosureButton>
-        <DisclosurePanel className="mt-2 max-w-2xs text-sm/5 text-white/50">
-          <div className="flex flex-col">
-            <div className="m-1 mb-0 text-sm">Long Break Interval Amount</div>
-            <Input
+        <Transition
+          enter="transition-opacity duration-300"
+          enterFrom="opacity-0 scale-95"
+          enterTo="opacity-100 scale-100"
+          leave="transition-opacity duration-200"
+          leaveFrom="opacity-100 scale-100"
+          leaveTo="opacity-0"
+        >
+          <DisclosurePanel className="mt-2 p-0.5 max-w-2xs text-sm/5 text-white/50">
+            <div
               disabled={isStarted}
-              className="px-3 py-1.5 mt-1 w-full rounded-lg text-sm/6 bg-white/5 text-white border border-gray-900 data-[disabled]:text-white/50"
-              name="lb_interval_amount"
-              min={2}
-              itemID="lb_interval_amount"
-              max={12}
-              value={longBreakInput}
-              onChange={(e) => setLongBreakInput(e.target.value)}
-              onBlur={() => {
-                const parsed = parseInt(longBreakInput, 10);
-                if (isNaN(parsed) || 12 < parsed || parsed < 2) {
-                  setLongBreakError("Invalid number of intervals");
-                  setLongBreakInput(longBreakInterval.toString()); //eğer interval geçersiz ise eski değere geri dönülüyor
-                } else {
-                  setLongBreakInput(parsed);
-                  setLongBreakInterval(parsed);
-                  setLongBreakError(""); // hata yoksa uyarıyı sil
-                }
-              }}
-              type="number"
-            />
-            <label
-              className="text-xs text-red-500 p-1 pb-0"
-              htmlFor="interval_amount"
+              className="flex flex-row gap-1 items-center p-1"
             >
-              {longBreakError}
-            </label>
-          </div>
-          <div className="flex flex-col">
-            <div className="m-1">Total Study Sessions</div>
-            <Input
-              disabled={isStarted}
-              className="px-3 py-1.5 mt-1 w-full rounded-lg text-sm/6 bg-white/5 text-white border border-gray-900 data-[disabled]:text-white/50"
-              name="interval_amount"
-              min={longBreakInterval} //en az 1 long break olacak kadar olmalı
-              itemID="interval_amount"
-              max={36}
-              value={totalCycles}
-              onChange={(e) => setTotalCycles(e.target.value)}
-              onBlur={() => {
-                const parsed = parseInt(totalCycles, 10);
-                if (isNaN(parsed) || 36 < parsed || parsed < 4) {
-                  setSessionAmountError("Invalid number of sessions");
-                  setTotalCycles(totalCycles.toString()); // eğer interval geçersiz ise eski değere geri dönülüyor
-                } else {
-                  setTotalCycles(parsed);
-                  setSessionAmountError(""); // hata yoksa uyarıyı sil
-                }
-              }}
-              type="number"
-            />
-            <label
-              className="text-xs text-red-500 p-1 pb-0"
-              htmlFor="interval_amount"
-            >
-              {sessionAmountError}
-            </label>
-          </div>
-          <div className="flex flex-col">
-            <div className="m-1 mt-3 mb-0 text-sm">Session change sound</div>
-            <Field>
-              <div className="relative">
-                <Select
-                  disabled={isStarted}
-                  className={clsx(
-                    "block w-full appearance-none rounded-lg border-none bg-white/5 px-3 py-1.5 mt-1 text-sm/6 text-white data-[disabled]:text-white/50",
-                    "focus:not-data-focus:outline-none data-focus:outline-2 data-focus:-outline-offset-2 data-focus:outline-white/25",
-                    // Make the text of each option black on Windows
-                    "*:text-black"
-                  )}
-                >
-                  <option value="sound1">Simple Alert</option>
-                  <option value="sound2">Ankara Metro Door</option>
-                  <option value="sound3">Shika</option>
-                  <option value="sound4">Guitar Riff</option>
-                </Select>
-                <ChevronDownIcon
-                  className="group pointer-events-none absolute top-2.5 right-2.5 size-4 fill-white/60"
-                  aria-hidden="true"
-                />
+              <Checkbox
+                disabled={isStarted}
+                checked={longBreakEnabled}
+                onChange={setLongBreakEnabled}
+                className="transition duration-300 cursor-pointer flex group size-6 rounded-md w-6 bg-white/10 p-1 ring-1 ring-white/15 ring-inset focus:not-data-focus:outline-none data-disabled:opacity-50 data-checked:bg-white data-focus:outline data-focus:outline-offset-2 data-focus:outline-white"
+              >
+                <CheckIcon className="invisible inline size-4 fill-black group-data-checked: group-data-checked:visible" />
+              </Checkbox>
+              <div className=" flex ml-1 text-sm my-auto select-none">
+                Long Breaks
               </div>
-            </Field>
-          </div>
-        </DisclosurePanel>
+            </div>
+            {longBreakEnabled && (
+              <div className="flex flex-col">
+                <div className="m-1 pt-1 select-none">
+                  Long Break Interval Amount
+                </div>
+                <Input
+                  disabled={isStarted}
+                  className="px-3 py-1.5 mt-1 w-full rounded-lg text-sm/6 bg-white/5 text-white border border-gray-900 data-[disabled]:text-white/50"
+                  name="lb_interval_amount"
+                  min={2}
+                  itemID="lb_interval_amount"
+                  max={12}
+                  value={longBreakInput}
+                  onChange={(e) => setLongBreakInput(e.target.value)}
+                  type="number"
+                />
+                <label
+                  className="text-xs text-red-500 p-1 pb-0"
+                  htmlFor="interval_amount"
+                >
+                  {longBreakError}
+                </label>
+              </div>
+            )}
+            <div className="flex flex-col">
+              <div className="m-1 pt-1 select-none">Total Study Sessions</div>
+              <Input
+                disabled={isStarted}
+                className="px-3 py-1.5 mt-1 w-full rounded-lg text-sm/6 bg-white/5 text-white border border-gray-900 data-[disabled]:text-white/50"
+                name="interval_amount"
+                min={2} //en az 1 long break olacak kadar olmalı
+                itemID="interval_amount"
+                max={36}
+                value={totalCycles}
+                onChange={(e) => setTotalCycles(e.target.value)}
+                type="number"
+              />
+              <label
+                className="text-xs text-red-500 p-1 pb-0"
+                htmlFor="interval_amount"
+              >
+                {sessionAmountError}
+              </label>
+            </div>
+            <div className="flex flex-col">
+              <div className="m-1 pt-1 select-none">Session change sound</div>
+              <div className="flex flex-row gap-2 justify-between">
+                <Field className="w-full">
+                  <div className="relative">
+                    <Select
+                      disabled={isStarted}
+                      value={selectedSound}
+                      onChange={(e) => setSelectedSound(e.target.value)}
+                      className={clsx(
+                        "block w-full appearance-none rounded-lg border-none bg-white/5 px-3 py-1.5 mt-1 text-sm/6 text-white data-[disabled]:text-white/50 cursor-pointer",
+                        "focus:not-data-focus:outline-none data-focus:outline-2 data-focus:-outline-offset-2 data-focus:outline-white/25",
+                        // Make the text of each option black on Windows
+                        "*:text-black"
+                      )}
+                    >
+                      <option value="simple">Simple Alert</option>
+                      <option value="metro">Ankara Metro Door</option>
+                      <option value="shika">Shika</option>
+                      <option value="karakara">Karakara</option>
+                    </Select>
+                    <ChevronDownIcon
+                      className="group pointer-events-none absolute top-2.5 right-2.5 size-4 fill-white/60"
+                      aria-hidden="true"
+                    />
+                  </div>
+                </Field>
+                <Button
+                  disabled={isStarted}
+                  onClick={playSelectedSound}
+                  className="cursor-pointer inline w-min appearance-none rounded-lg border-none bg-white/5 px-3 py-1.5 mt-1 text-sm/6 text-white data-[disabled]:text-white/50"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 16 16"
+                    fill="currentColor"
+                    className="size-4"
+                  >
+                    <path d="M3 3.732a1.5 1.5 0 0 1 2.305-1.265l6.706 4.267a1.5 1.5 0 0 1 0 2.531l-6.706 4.268A1.5 1.5 0 0 1 3 12.267V3.732Z" />
+                  </svg>
+                </Button>
+              </div>
+            </div>
+          </DisclosurePanel>
+        </Transition>
       </Disclosure>
     </div>
   );

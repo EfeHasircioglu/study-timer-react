@@ -24,12 +24,12 @@ export default function TimerTab({
   return (
     <div>
       {/* kaç sessionumuz daha kaldığını bize söyleyen label */}
-      <div className="text-sm m-2 mb-1">
+      <div className="text-sm m-2 mb-1 select-none transition duration-300">
         {completedSessions >= totalCycles
           ? "🎉 All sessions completed!"
           : `Completed ${completedSessions} of ${totalCycles} sessions`}
       </div>
-      <div className="flex gap-2 text-4xl w-fit p-1 m-1 data-hover:border-gray-600">
+      <div className="flex gap-2 text-4xl w-fit p-1 m-1 data-hover:border-gray-600 transition duration-300">
         <div
           key={activeTab}
           suppressContentEditableWarning={true}
@@ -53,14 +53,14 @@ export default function TimerTab({
         <>
           <Button
             onClick={isRunning ? stopTimer : startTimer}
-            className="ml-1 mb-1  rounded-full border-1 border-gray-600 p-1 w-16  cursor-pointer data-[hover]:bg-gray-700"
+            className="ml-1 mb-1  rounded-full border-1 border-gray-600 p-1 w-16  cursor-pointer data-[hover]:bg-gray-700 transition duration-300"
           >
             {!isRunning ? `Start` : `Stop`}
           </Button>
           {/* aşağıdaki, reset butonu */}
           <Button
             onClick={resetTimer}
-            className="inline-flex justify-center mb-1 ml-3 gap-2 rounded-full w-9 align-middle p-1.5 border-1 border-gray-600 cursor-pointer data-[hover]:bg-gray-700"
+            className="inline-flex justify-center mb-1 ml-3 gap-2 rounded-full w-9 align-middle p-1.5 border-1 border-gray-600 cursor-pointer data-[hover]:bg-gray-700 transition duration-300"
           >
             {
               <svg
